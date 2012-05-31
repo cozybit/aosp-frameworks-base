@@ -20,15 +20,21 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.LinkAddress;
 import android.net.LinkCapabilities;
 import android.net.LinkProperties;
 import android.net.NetworkInfo;
 import android.net.NetworkStateTracker;
-import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Slog;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -39,7 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class WifiStateTracker implements NetworkStateTracker {
 
     private static final String NETWORKTYPE = "WIFI";
-    private static final String TAG = "WifiStateTracker";
+    private static final String TAG = "MeshedWifiStateTracker";
 
     private static final boolean LOGV = true;
 
@@ -86,8 +92,6 @@ public class WifiStateTracker implements NetworkStateTracker {
         mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
         IntentFilter filter = new IntentFilter();
         filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-        filter.addAction(WifiManager.LINK_CONFIGURATION_CHANGED_ACTION);
-        filter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
 
         mWifiStateReceiver = new WifiStateReceiver();
         mContext.registerReceiver(mWifiStateReceiver, filter);
@@ -204,53 +208,65 @@ public class WifiStateTracker implements NetworkStateTracker {
         return "net.tcp.buffersize.wifi";
     }
 
+	private InetAddress getMeshInetAddress() {
+    	try {
+    		NetworkInterface ni = NetworkInterface.getByName("mesh0");
+    		if (ni.isUp()) {
+    			List<InetAddress> ipList = Collections.list((Enumeration<InetAddress>)ni.getInetAddresses());
+    			 
+    		    for ( InetAddress ip : ipList){
+    		    	// Only IPV4 address ??
+    		    	if (ip.getAddress().length == 4) {
+    		    		return ip;
+    		    	}
+    		    }
+    		}
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
+    	return null;
+	}
+    
     private class WifiStateReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            if (intent.getAction().equals(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION)) {
-                    mNetworkInfo = (NetworkInfo) intent.getParcelableExtra(
-                            WifiP2pManager.EXTRA_NETWORK_INFO);
-                    mLinkProperties = intent.getParcelableExtra(
-                            WifiP2pManager.EXTRA_LINK_PROPERTIES);
-                    if (mLinkProperties == null) {
-                        mLinkProperties = new LinkProperties();
-                    }
-                    mLinkCapabilities = intent.getParcelableExtra(
-                        WifiP2pManager.EXTRA_LINK_CAPABILITIES);
-                    if (mLinkCapabilities == null) {
-                        mLinkCapabilities = new LinkCapabilities();
-                    }
-             } else if (intent.getAction().equals(WifiManager.NETWORK_STATE_CHANGED_ACTION)) {
+             if (intent.getAction().equals(WifiManager.NETWORK_STATE_CHANGED_ACTION)) {
+            	 
                 mNetworkInfo = (NetworkInfo) intent.getParcelableExtra(
                         WifiManager.EXTRA_NETWORK_INFO);
+                                
                 mLinkProperties = intent.getParcelableExtra(
                         WifiManager.EXTRA_LINK_PROPERTIES);
                 if (mLinkProperties == null) {
                     mLinkProperties = new LinkProperties();
                 }
+                
                 mLinkCapabilities = intent.getParcelableExtra(
                         WifiManager.EXTRA_LINK_CAPABILITIES);
                 if (mLinkCapabilities == null) {
                     mLinkCapabilities = new LinkCapabilities();
                 }
-                // don't want to send redundent state messages
+                // don't want to send redundant state messages
                 // TODO can this be fixed in WifiStateMachine?
                 NetworkInfo.State state = mNetworkInfo.getState();
                 if (mLastState == state) {
                     return;
                 } else {
                     mLastState = state;
+                    // This is a workaround to add the correct IP 
+                    // in the LinkProperties when we are CONNECTED
+                	if (mNetworkInfo.isConnected() &&  mLinkProperties.getAddresses().size() == 0 ) {
+                		LinkAddress address = new LinkAddress(getMeshInetAddress(), 8);
+                		mLinkProperties.addLinkAddress(address);
+                	} else if (!mNetworkInfo.isConnected()) {
+                		mLinkProperties.clear();
+                	}
                 }
                 Message msg = mCsHandler.obtainMessage(EVENT_STATE_CHANGED,
                         new NetworkInfo(mNetworkInfo));
                 msg.sendToTarget();
-            } else if (intent.getAction().equals(WifiManager.LINK_CONFIGURATION_CHANGED_ACTION)) {
-                mLinkProperties = (LinkProperties) intent.getParcelableExtra(
-                        WifiManager.EXTRA_LINK_PROPERTIES);
-                Message msg = mCsHandler.obtainMessage(EVENT_CONFIGURATION_CHANGED, mNetworkInfo);
-                msg.sendToTarget();
-            }
+            } 
         }
     }
 
