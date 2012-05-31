@@ -106,9 +106,9 @@ public class WifiInfo implements Parcelable {
     /* Quick hack to set IP and mac on WifiInfo */
     public WifiInfo (InetAddress inetAddr, String macAddr) {
     	super();
-        mSSID = "mesh";
-        mBSSID = "mesh";
-        mNetworkId = -1;
+        mSSID = new String("magmesh");
+        mBSSID = new String("magmesh");
+        mNetworkId = 1;
         mSupplicantState = SupplicantState.COMPLETED;
         mRssi = 255;
         mLinkSpeed = 50;
