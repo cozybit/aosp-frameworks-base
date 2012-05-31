@@ -101,6 +101,23 @@ public class WifiInfo implements Parcelable {
             mExplicitConnect = source.mExplicitConnect;
         }
     }
+    
+    
+    /* Quick hack to set IP and mac on WifiInfo */
+    public WifiInfo (InetAddress inetAddr, String macAddr) {
+    	super();
+        mSSID = "mesh";
+        mBSSID = "mesh";
+        mNetworkId = -1;
+        mSupplicantState = SupplicantState.COMPLETED;
+        mRssi = 255;
+        mLinkSpeed = 50;
+        mHiddenSSID = false;
+        mExplicitConnect = false;
+        
+    	mIpAddress = inetAddr;
+    	mMacAddress = macAddr;
+    }
 
     void setSSID(String SSID) {
         mSSID = SSID;
@@ -164,7 +181,8 @@ public class WifiInfo implements Parcelable {
      * @param macAddress the MAC address in {@code XX:XX:XX:XX:XX:XX} form
      */
     void setMacAddress(String macAddress) {
-        this.mMacAddress = macAddress;
+    	if (macAddress != null)
+    		this.mMacAddress = macAddress;
     }
 
     public String getMacAddress() {
@@ -215,7 +233,8 @@ public class WifiInfo implements Parcelable {
     }
 
     void setInetAddress(InetAddress address) {
-        mIpAddress = address;
+    	if (address != null)
+    		mIpAddress = address;
     }
 
     public int getIpAddress() {
