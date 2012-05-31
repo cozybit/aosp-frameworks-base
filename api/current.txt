@@ -12388,6 +12388,7 @@ package android.net.wifi {
   }
 
   public class WifiInfo implements android.os.Parcelable {
+    ctor public WifiInfo(java.net.InetAddress, java.lang.String);
     method public int describeContents();
     method public java.lang.String getBSSID();
     method public static android.net.NetworkInfo.DetailedState getDetailedStateOf(android.net.wifi.SupplicantState);
@@ -12483,6 +12484,71 @@ package android.net.wifi {
     field public static final int PBC = 0; // 0x0
     field public java.lang.String pin;
     field public int setup;
+  }
+
+}
+
+package android.net.wifi.mesh {
+
+  public class CmdOutput {
+    ctor public CmdOutput();
+    field public java.lang.String STDERR;
+    field public java.lang.String STDOUT;
+  }
+
+  public abstract interface IMeshTestUI {
+    method public abstract void notifyMeshDisabled();
+    method public abstract void notifyMeshEnabled();
+    method public abstract void notifyPeerInfo(android.net.wifi.mesh.MeshManager.MeshNode);
+    method public abstract void notifyStationDumpDisabled();
+    method public abstract void notifyStationDumpEnabled();
+    method public abstract void promptDialog(int);
+    field public static final int INTERFACE_ERROR_DIALOG = 1; // 0x1
+    field public static final int NETDEV_ERROR_DIALOG = 2; // 0x2
+    field public static final int SHELL_ERROR_DIALOG = 0; // 0x0
+  }
+
+  public class MeshManager {
+    ctor public MeshManager(android.net.wifi.mesh.IMeshTestUI);
+    method public void disableMesh();
+    method public void dumpStations();
+    method public void enableMesh();
+    method public void enableStationDump(boolean);
+    method public boolean isMeshActive();
+    method public void meshActiveSet(boolean);
+  }
+
+  public class MeshManager.MeshNode {
+    ctor public MeshManager.MeshNode();
+    ctor public MeshManager.MeshNode(java.lang.String, java.lang.String, java.lang.String, java.lang.String, int);
+    field public java.lang.String ip;
+    field public int latency;
+    field public java.lang.String mac;
+    field public java.lang.String nextHop;
+    field public java.lang.String status;
+  }
+
+  public class Shell {
+    method public static synchronized android.net.wifi.mesh.CmdOutput exec(java.lang.String) throws android.net.wifi.mesh.Shell.ShellException;
+    method public static java.lang.String getOutput(java.io.InputStream);
+    method public static synchronized void setOutputStream(android.net.wifi.mesh.Shell.OUTPUT);
+    method public static synchronized void setShell(java.lang.String);
+    method public static synchronized boolean su();
+    method public static synchronized android.net.wifi.mesh.CmdOutput sudo(java.lang.String) throws android.net.wifi.mesh.Shell.ShellException;
+  }
+
+  public static final class Shell.OUTPUT extends java.lang.Enum {
+    method public static android.net.wifi.mesh.Shell.OUTPUT valueOf(java.lang.String);
+    method public static final android.net.wifi.mesh.Shell.OUTPUT[] values();
+    enum_constant public static final android.net.wifi.mesh.Shell.OUTPUT NONE;
+    enum_constant public static final android.net.wifi.mesh.Shell.OUTPUT STDBOTH;
+    enum_constant public static final android.net.wifi.mesh.Shell.OUTPUT STDERR;
+    enum_constant public static final android.net.wifi.mesh.Shell.OUTPUT STDOUT;
+  }
+
+  public static class Shell.ShellException extends java.lang.Exception {
+    ctor public Shell.ShellException();
+    ctor public Shell.ShellException(java.lang.String);
   }
 
 }
