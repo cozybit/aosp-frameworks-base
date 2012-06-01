@@ -127,7 +127,20 @@ public class WifiService extends IWifiManager.Stub {
 			
 			@Override
 			public void promptDialog(int dialogID) {
-				// Nothing to do here
+				// Error happened while shuting down the mesh interface 
+				// probably the mesh0 interface is not over there
+				if (mWifiState.get() == WIFI_STATE_ENABLED) {
+					try {
+						NetworkInterface ni = NetworkInterface.getByName("mesh0");
+						if (ni == null || !ni.isUp()) {
+							// The interface has been disconected 
+							// so we must notify the new state
+							notifyMeshDisabled();
+						}
+					} catch (SocketException e) {
+						// Nothing to do here...
+					}
+				}
 			}
 			
 			@Override
