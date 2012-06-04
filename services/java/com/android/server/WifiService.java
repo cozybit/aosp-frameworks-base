@@ -7,11 +7,9 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -133,7 +131,7 @@ public class WifiService extends IWifiManager.Stub {
 					try {
 						NetworkInterface ni = NetworkInterface.getByName("mesh0");
 						if (ni == null || !ni.isUp()) {
-							// The interface has been disconected 
+							// The interface has been disconnected 
 							// so we must notify the new state
 							notifyMeshDisabled();
 						}
@@ -165,7 +163,7 @@ public class WifiService extends IWifiManager.Stub {
 				// We set mNetworkInfo to DatailedState.CONNECTED
 				setNetworkDetailedState(DetailedState.CONNECTED);
 				// We notify the NetworkState change
-				sendNetworkStateChangeBroadcast(null);
+				sendNetworkStateChangeBroadcast("magmesh");
 				// We send a sticky MAX_RSSI value
 				sendRssiChangeBroadcast(MAX_RSSI);
 			}
@@ -251,23 +249,19 @@ public class WifiService extends IWifiManager.Stub {
 
 	private String getMeshMacAddress() {
     	try {
-    		Enumeration<NetworkInterface> list = NetworkInterface.getNetworkInterfaces(); 
-    		while (list.hasMoreElements()) {
-				NetworkInterface iface = list.nextElement();
-				if (iface.getDisplayName().equals("mesh0") && iface.isUp()) {
-					byte[] mac = iface.getHardwareAddress();
-					
-					if (mac != null) {
-						StringBuilder sb = new StringBuilder(18);
-					    for (byte b : mac) {
-					        if (sb.length() > 0)
-					            sb.append(':');
-					        sb.append(String.format("%02x", b));
-					    }
-					    return sb.toString();
-					}
+    		NetworkInterface iface = NetworkInterface.getByName("mesh0");
+			if (iface != null && iface.isUp()) {
+				byte[] mac = iface.getHardwareAddress();
+				if (mac != null) {
+					StringBuilder sb = new StringBuilder(18);
+				    for (byte b : mac) {
+				        if (sb.length() > 0)
+				            sb.append(':');
+				        sb.append(String.format("%02x", b));
+				    }
+				    return sb.toString();
 				}
-            }
+			}
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
@@ -276,11 +270,10 @@ public class WifiService extends IWifiManager.Stub {
 	
 	private InetAddress getMeshInetAddress() {
     	try {
-    		NetworkInterface ni = NetworkInterface.getByName("mesh0");
-    		if (ni.isUp()) {
-    			List<InetAddress> ipList = Collections.list((Enumeration<InetAddress>)ni.getInetAddresses());
-    			 
-    		    for ( InetAddress ip : ipList){
+    		NetworkInterface iface = NetworkInterface.getByName("mesh0");
+    		if (iface != null && iface.isUp()) {
+    			List<InetAddress> ipList = Collections.list((Enumeration<InetAddress>)iface.getInetAddresses());
+    		    for (InetAddress ip : ipList){
     		    	// Only IPV4 address ??
     		    	if (ip.getAddress().length == 4) {
     		    		return ip;
@@ -293,13 +286,28 @@ public class WifiService extends IWifiManager.Stub {
     	return null;
 	}
 
+	private boolean isMeshInterfaceUp() {
+		NetworkInterface iface;
+		try {
+			iface = NetworkInterface.getByName("mesh0");
+			if (iface != null && iface.isUp())
+				return true;
+		} catch (SocketException e) {
+			// Nothing to handle here...
+		}
+		return false;
+	}
+
 	
 	@Override
 	public WifiInfo getConnectionInfo() throws RemoteException {
-		WifiInfo wifiInfo = new WifiInfo(getMeshInetAddress(),getMeshMacAddress());
-		return wifiInfo;
+		if (isMeshInterfaceUp())
+			return new WifiInfo(getMeshInetAddress(), getMeshMacAddress());
+		else
+			return new WifiInfo();
 	}
 	
+
 
 	@Override
 	public int getWifiEnabledState() throws RemoteException {
@@ -353,7 +361,7 @@ public class WifiService extends IWifiManager.Stub {
 	    String dns2 = "10.0.0.2";
 	    String gateway = "10.0.0.1";
 	    String serverAddress = "10.0.0.1";
-	    int prefixLength = 4;
+	    int prefixLength = 8;
 	    int leaseDuration = 3600;
 		
 		DhcpInfo info = new DhcpInfo();
@@ -527,7 +535,7 @@ public class WifiService extends IWifiManager.Stub {
         if (bssid != null)
             intent.putExtra(WifiManager.EXTRA_BSSID, bssid);
         if (mNetworkInfo.getState() == NetworkInfo.State.CONNECTED)
-            intent.putExtra(WifiManager.EXTRA_WIFI_INFO, WifiInfo.CREATOR.newArray(1)[0]);
+            intent.putExtra(WifiManager.EXTRA_WIFI_INFO, new WifiInfo(getMeshInetAddress(), getMeshMacAddress()));
         mContext.sendStickyBroadcast(intent);
     }   
     

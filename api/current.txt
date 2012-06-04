@@ -12388,6 +12388,7 @@ package android.net.wifi {
   }
 
   public class WifiInfo implements android.os.Parcelable {
+    ctor public WifiInfo();
     ctor public WifiInfo(java.net.InetAddress, java.lang.String);
     method public int describeContents();
     method public java.lang.String getBSSID();
