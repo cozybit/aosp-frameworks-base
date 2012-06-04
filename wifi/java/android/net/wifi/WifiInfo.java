@@ -72,7 +72,7 @@ public class WifiInfo implements Parcelable {
     private String mMacAddress;
     private boolean mExplicitConnect;
 
-    WifiInfo() {
+    public WifiInfo() {
         mSSID = null;
         mBSSID = null;
         mNetworkId = -1;
@@ -105,18 +105,17 @@ public class WifiInfo implements Parcelable {
     
     /* Quick hack to set IP and mac on WifiInfo */
     public WifiInfo (InetAddress inetAddr, String macAddr) {
-    	super();
-        mSSID = new String("magmesh");
-        mBSSID = new String("magmesh");
+    	
         mNetworkId = 1;
-        mSupplicantState = SupplicantState.COMPLETED;
         mRssi = 255;
         mLinkSpeed = 50;
-        mHiddenSSID = false;
-        mExplicitConnect = false;
-        
     	mIpAddress = inetAddr;
+        mSSID = new String("magmesh");
+        mBSSID = new String("magmesh");
     	mMacAddress = macAddr;
+        mExplicitConnect = false;
+        mSupplicantState = SupplicantState.COMPLETED;
+        mHiddenSSID = false;
     }
 
     void setSSID(String SSID) {
