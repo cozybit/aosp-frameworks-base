@@ -778,7 +778,8 @@ public final class MediaStore {
             }
 
             /**
-             * Insert an image and create a thumbnail for it.
+             * Insert an image and create a thumbnail for it. The image is encoded using a default
+             * format indicated by {@code STORED_COMPRESSION_FORMAT} and with a default quality parameter.
              *
              * @param cr The content resolver to use
              * @param source The stream to use for the image
@@ -792,7 +793,7 @@ public final class MediaStore {
                 ContentValues values = new ContentValues();
                 values.put(Images.Media.TITLE, title);
                 values.put(Images.Media.DESCRIPTION, description);
-                values.put(Images.Media.MIME_TYPE, "image/jpeg");
+                values.put(Images.Media.MIME_TYPE, STORED_CONTENT_TYPE);
 
                 Uri url = null;
                 String stringUrl = null;    /* value to be returned */
@@ -803,7 +804,7 @@ public final class MediaStore {
                     if (source != null) {
                         OutputStream imageOut = cr.openOutputStream(url);
                         try {
-                            source.compress(Bitmap.CompressFormat.JPEG, 50, imageOut);
+                            source.compress(STORED_COMPRESSION_FORMAT, 50, imageOut);
                         } finally {
                             imageOut.close();
                         }
@@ -861,11 +862,20 @@ public final class MediaStore {
                     getContentUri("external");
 
             /**
-             * The MIME type of of this directory of
-             * images.  Note that each entry in this directory will have a standard
-             * image MIME type as appropriate -- for example, image/jpeg.
+             * The MIME type of this directory of images. Note that each entry in this directory will have
+             * a standard image MIME type as specified by STORED_CONTENT_TYPE. 
              */
             public static final String CONTENT_TYPE = "vnd.android.cursor.dir/image";
+
+            /**
+             * The MIME type of the underlying data when stored.
+             */
+            public static final String STORED_CONTENT_TYPE = "image/jpeg";
+
+            /**
+             * The compression format used to compress the images stored in this media store.
+             */
+            public static final Bitmap.CompressFormat STORED_COMPRESSION_FORMAT = Bitmap.CompressFormat.JPEG;
 
             /**
              * The default sort order for this table
